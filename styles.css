@@ -1,7 +1,7 @@
 /* Zorin OS Desktop Preview
-   Defaults from: ZorinBlue-Dark / ZorinBlue-Light (zorin-desktop-themes), zorin-taskbar
-   Panel: bottom 48px, Windows-style layout
-   Theme / icons / wallpaper: Zorin icon theme / Planet-Zorin · Zorin-Dark
+   Core layouts: Windows-like, Windows List-like, Touch, GNOME Shell-like
+   Themes: ZorinBlue-Dark / ZorinBlue-Light (zorin-desktop-themes)
+   Components: zorin-taskbar, zorin-menu, GNOME Shell Quick Settings / overview
 */
 
 :root {
@@ -319,16 +319,66 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   width: 44px;
   height: 40px;
+  padding: 0 6px;
   border-radius: 12px;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-fast), width var(--transition-fast), min-width var(--transition-fast);
+  overflow: hidden;
 }
 
 .panel-app img {
   width: 28px;
   height: 28px;
   object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Labels: hidden in icon taskbar (Windows-like); always on in Windows List-like */
+.panel-app-label {
+  display: none;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+  line-height: 1.2;
+}
+
+/* Windows List-like: classic labeled task buttons (icon + title) */
+.layout-windows-list .panel-launchers {
+  gap: 4px;
+}
+
+.layout-windows-list .panel-app {
+  width: auto;
+  min-width: 108px;
+  max-width: 200px;
+  height: 36px;
+  padding: 0 12px 0 8px;
+  justify-content: flex-start;
+  border-radius: 8px;
+  background: var(--panel-hover);
+}
+
+.layout-windows-list .panel-app-label {
+  display: inline;
+}
+
+.layout-windows-list .panel-app img {
+  width: 22px;
+  height: 22px;
+}
+
+.layout-windows-list .panel-app.active {
+  background: var(--panel-active);
+  box-shadow: inset 0 0 0 1px var(--panel-edge);
+}
+
+.layout-windows-list .panel-app-indicator {
+  display: none;
 }
 
 .panel-app:hover {
@@ -413,22 +463,21 @@ img {
   opacity: 0.85;
 }
 
-/* ---------- Zorin Menu ---------- */
+/* ---------- Zorin Menu (Windows-like home + categories) ---------- */
 
 .zorin-menu {
   position: absolute;
   left: 8px;
   bottom: calc(var(--panel-height) + 8px);
   z-index: 60;
-  width: min(560px, calc(100vw - 16px));
-  max-height: min(620px, calc(100vh - var(--panel-height) - 24px));
+  width: min(520px, calc(100vw - 16px));
+  height: min(520px, calc(100vh - var(--panel-height) - 24px));
 }
 
 .zorin-menu-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-height: inherit;
   background: var(--popup-bg);
   border: 1px solid var(--popup-border);
   border-radius: var(--popup-radius);
@@ -438,55 +487,26 @@ img {
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
-.zm-search-wrap {
-  position: relative;
-  padding: 12px 12px 8px;
-}
-
-.zm-search-icon {
-  position: absolute;
-  left: 24px;
-  top: 50%;
-  transform: translateY(-40%);
-  width: 16px;
-  height: 16px;
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.zm-search {
-  width: 100%;
-  height: 38px;
-  padding: 0 12px 0 38px;
-  border: none;
-  border-radius: 9px;
-  background: var(--surface-raised);
-  color: var(--surface-fg);
-  font: inherit;
-  outline: none;
-}
-
-.zm-search::placeholder {
-  color: var(--surface-fg-dim);
-}
-
-.zm-search:focus {
-  box-shadow: inset 0 0 0 2px var(--accent-ring);
-}
-
 .zm-body {
   display: flex;
   flex: 1;
   min-height: 0;
-  border-top: 1px solid var(--popup-border);
+}
+
+.zm-left {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--popup-border);
+  background: var(--popup-footer);
+  min-height: 0;
 }
 
 .zm-categories {
-  width: 180px;
-  flex-shrink: 0;
+  flex: 1;
   overflow-y: auto;
-  padding: 8px 6px;
-  border-right: 1px solid var(--popup-border);
+  padding: 10px 8px 6px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -497,7 +517,7 @@ img {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 9px 10px;
   border-radius: 9px;
   text-align: left;
   font-size: 13px;
@@ -522,22 +542,190 @@ img {
   color: var(--cat-selected-fg);
 }
 
+.zm-cat .zm-cat-chevron {
+  margin-left: auto;
+  width: 12px;
+  height: 12px;
+  opacity: 0.45;
+}
+
+.zm-all-apps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 8px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--surface-fg);
+  transition: background var(--transition-fast);
+}
+
+.zm-all-apps .sym {
+  width: 18px;
+  height: 18px;
+}
+
+.zm-all-apps:hover,
+.zm-all-apps.selected {
+  background: var(--accent-soft);
+}
+
+.zm-search-wrap {
+  position: relative;
+  padding: 8px 10px 12px;
+}
+
+.zm-search-icon {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-40%);
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.zm-search {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px 0 34px;
+  border: none;
+  border-radius: 9px;
+  background: var(--surface-raised);
+  color: var(--surface-fg);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.zm-search::placeholder {
+  color: var(--surface-fg-dim);
+}
+
+.zm-search:focus {
+  box-shadow: inset 0 0 0 2px var(--accent-ring);
+}
+
+.zm-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.zm-home {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 14px 12px 10px;
+  min-height: 0;
+}
+
+.zm-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 14px;
+}
+
+.zm-avatar {
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  border-radius: 50%;
+  background: var(--surface-raised);
+}
+
+.zm-username {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.zm-places,
+.zm-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.zm-place,
+.zm-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background var(--transition-fast);
+}
+
+.zm-place img,
+.zm-shortcut img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.zm-place:hover,
+.zm-shortcut:hover {
+  background: var(--surface-hover);
+}
+
+.zm-home-sep {
+  height: 1px;
+  margin: 10px 8px;
+  background: var(--popup-border);
+}
+
+.zm-session {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  padding: 10px 4px 4px;
+}
+
+.zm-session-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  transition: background var(--transition-fast);
+}
+
+.zm-session-btn img {
+  width: 16px;
+  height: 16px;
+}
+
+.zm-session-btn:hover {
+  background: var(--surface-hover);
+}
+
 .zm-apps-pane {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 8px 10px 12px;
+  padding: 12px 10px 12px;
   overflow: hidden;
+  height: 100%;
 }
 
 .zm-section-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--surface-fg-dim);
-  padding: 4px 8px 8px;
+  padding: 2px 8px 10px;
 }
 
 .zm-apps {
@@ -598,60 +786,6 @@ img {
   text-align: center;
   color: var(--surface-fg-dim);
   font-size: 13px;
-}
-
-.zm-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--popup-border);
-  background: var(--popup-footer);
-}
-
-.zm-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.zm-avatar {
-  width: 28px;
-  height: 28px;
-  padding: 4px;
-  border-radius: 50%;
-  background: var(--surface-raised);
-}
-
-.zm-username {
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.zm-session {
-  display: flex;
-  gap: 4px;
-}
-
-.zm-session-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9px;
-  transition: background var(--transition-fast);
-}
-
-.zm-session-btn img {
-  width: 16px;
-  height: 16px;
-}
-
-.zm-session-btn:hover {
-  background: var(--surface-hover);
 }
 
 /* ---------- Calendar popover ---------- */
@@ -818,12 +952,30 @@ html[data-night-light="on"] .night-light-overlay {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
-.qs-toolbar-group {
+.qs-battery {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+.qs-battery .sym {
+  width: 18px;
+  height: 18px;
+}
+
+.qs-toolbar-group,
+.qs-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .qs-round-btn {
@@ -1686,5 +1838,759 @@ html[data-theme="light"] .qs-range::-moz-range-thumb {
 .desktop.show-desktop .files-window:not([hidden]),
 .desktop.show-desktop .term-window:not([hidden]) {
   visibility: hidden;
+  pointer-events: none;
+}
+
+/* ========== Layout chooser (preview chrome) ========== */
+
+.layout-chooser {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border-radius: 14px;
+  background: rgba(22, 22, 22, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0.38;
+  transition: opacity 200ms ease, background 200ms ease, border-color 200ms ease;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.layout-chooser:hover,
+.layout-chooser:focus-within {
+  opacity: 0.96;
+  background: rgba(22, 22, 22, 0.9);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.layout-chooser-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.layout-chooser-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.layout-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 112px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.layout-opt:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.layout-opt.active {
+  background: rgba(189, 230, 251, 0.22);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(189, 230, 251, 0.55);
+}
+
+.layout-opt-name {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.layout-preview {
+  position: relative;
+  width: 72px;
+  height: 48px;
+  border-radius: 5px;
+  background: linear-gradient(145deg, rgba(80, 120, 160, 0.45), rgba(20, 35, 55, 0.55));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.lp-bar {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.lp-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+}
+
+.lp-bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+}
+
+.lp-dock {
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.lp-menu {
+  bottom: 9px;
+  left: 4px;
+  width: 14px;
+  height: 18px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.lp-task {
+  bottom: 2px;
+  left: 18px;
+  width: 16px;
+  height: 5px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.lp-task-2 {
+  left: 36px;
+  width: 22px;
+}
+
+.lp-grid {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 20px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: 6px 0 0 rgba(255, 255, 255, 0.18), -6px 0 0 rgba(255, 255, 255, 0.18);
+}
+
+.layout-opt.active .lp-bar,
+.layout-opt.active .lp-menu,
+.layout-opt.active .lp-task,
+.layout-opt.active .lp-grid {
+  background: var(--accent);
+}
+
+/* ========== Layout visibility ========== */
+
+.top-bar,
+.gnome-dash,
+.touch-dock,
+.touch-grid,
+.gnome-overview {
+  display: none;
+}
+
+/* HTML hidden attribute must win over layout display rules */
+.panel[hidden],
+.top-bar[hidden],
+.gnome-dash[hidden],
+.touch-dock[hidden],
+.touch-grid[hidden],
+.gnome-overview[hidden],
+.zorin-menu[hidden],
+.qs-popover[hidden],
+.calendar-popover[hidden],
+.power-menu[hidden] {
+  display: none !important;
+}
+
+.layout-windows .panel,
+.layout-windows-list .panel {
+  display: flex;
+}
+
+.layout-windows .desktop-icons,
+.layout-windows-list .desktop-icons {
+  display: flex;
+}
+
+.layout-touch .panel,
+.layout-gnome .panel {
+  display: none !important;
+}
+
+.layout-touch .desktop-icons,
+.layout-gnome .desktop-icons {
+  display: none !important;
+}
+
+.layout-touch .touch-dock {
+  display: flex;
+}
+
+.layout-touch .touch-grid:not([hidden]) {
+  display: flex;
+}
+
+.layout-gnome .top-bar {
+  display: flex;
+}
+
+.layout-gnome .gnome-dash {
+  display: flex;
+}
+
+.layout-gnome .gnome-overview:not([hidden]) {
+  display: flex;
+}
+
+.layout-gnome .zorin-menu {
+  display: none !important;
+}
+
+/* Popover anchoring per layout */
+.layout-gnome .qs-popover {
+  top: calc(36px + 8px);
+  bottom: auto;
+  right: 12px;
+  left: auto;
+}
+
+/* GNOME: clock is centered — calendar/notifications drop under it, not at the tray */
+.layout-gnome .calendar-popover {
+  top: calc(36px + 8px);
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.layout-gnome .power-menu {
+  top: calc(36px + 88px);
+  bottom: auto;
+  right: 20px;
+}
+
+.layout-touch .power-menu {
+  bottom: 160px;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+.layout-touch .qs-popover {
+  bottom: 72px;
+  right: 50%;
+  transform: translateX(50%);
+}
+
+.layout-touch .calendar-popover {
+  bottom: 72px;
+  right: 50%;
+  left: auto;
+  transform: translateX(40%);
+}
+
+.layout-gnome .files-window:not(.maximized),
+.layout-gnome .term-window:not(.maximized) {
+  top: 56px;
+}
+
+.layout-touch .files-window:not(.maximized),
+.layout-touch .term-window:not(.maximized) {
+  bottom: auto;
+}
+
+.layout-gnome .files-window.maximized,
+.layout-gnome .term-window.maximized {
+  top: 36px !important;
+  height: calc(100vh - 36px - 80px) !important;
+}
+
+/* ========== GNOME Shell top bar ========== */
+
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  z-index: 50;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: var(--panel-fg);
+  box-shadow: 0 1px 0 var(--panel-edge);
+}
+
+.activities-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 9px;
+  color: var(--panel-fg);
+  transition: background var(--transition-fast);
+}
+
+.activities-btn:hover,
+.activities-btn[aria-expanded="true"] {
+  background: var(--panel-hover);
+}
+
+.top-clock {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: auto;
+  height: 28px;
+  padding: 0 12px;
+}
+
+.top-status {
+  margin-left: auto;
+  height: 28px;
+  gap: 8px;
+  padding: 0 10px;
+}
+
+/* ========== GNOME dash ========== */
+
+.gnome-dash {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.gnome-dash-inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 18px;
+  background: var(--panel-bg);
+  border: 1px solid var(--popup-border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dash-item {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  transition: background var(--transition-fast);
+}
+
+.dash-item img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.dash-item:hover {
+  background: var(--panel-hover);
+}
+
+.dash-item.running .dash-dot,
+.dash-item.active .dash-dot {
+  opacity: 1;
+}
+
+.dash-item.active {
+  background: var(--panel-active);
+}
+
+.dash-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+}
+
+.dash-show-apps .sym {
+  width: 28px;
+  height: 28px;
+}
+
+/* ========== GNOME overview ========== */
+
+.gnome-overview {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 56px 24px 96px;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  overflow: hidden;
+}
+
+.gnome-overview-inner {
+  width: min(880px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.gnome-search-wrap {
+  position: relative;
+  width: min(420px, 100%);
+}
+
+.gnome-search-wrap .sym {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.gnome-search {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px 0 40px;
+  border: none;
+  border-radius: 999px;
+  background: var(--popup-bg);
+  color: var(--surface-fg);
+  font: inherit;
+  font-size: 15px;
+  box-shadow: var(--shadow);
+  outline: none;
+}
+
+.gnome-search::placeholder {
+  color: var(--surface-fg-dim);
+}
+
+.gnome-workspaces {
+  display: flex;
+  gap: 16px;
+}
+
+.gnome-ws-thumb {
+  width: 140px;
+  height: 80px;
+  border-radius: 12px;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+
+.gnome-ws-thumb.active {
+  border-color: var(--accent);
+}
+
+.gnome-ws-preview {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background:
+    linear-gradient(160deg, rgba(189, 230, 251, 0.12), transparent 50%),
+    var(--wallpaper-fallback);
+  background-size: cover;
+}
+
+.gnome-ws-preview.dim {
+  opacity: 0.55;
+}
+
+.gnome-overview-apps {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px 4px;
+  width: 100%;
+  max-height: none;
+  overflow: hidden;
+  padding: 4px;
+  scrollbar-width: none;
+}
+
+.gnome-overview-apps::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.gnome-ov-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  color: #f4fafc;
+  transition: background var(--transition-fast);
+  min-width: 0;
+}
+
+.gnome-ov-app img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.gnome-ov-app span {
+  font-size: 11px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.gnome-ov-app:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ========== Touch dock ========== */
+
+.touch-dock {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.touch-dock-inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 22px;
+  background: var(--panel-bg);
+  border: 1px solid var(--popup-border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: var(--panel-fg);
+}
+
+.touch-dock-btn {
+  position: relative;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 14px;
+  transition: background var(--transition-fast);
+}
+
+.touch-dock-btn img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.touch-dock-btn .sym {
+  width: 22px;
+  height: 22px;
+}
+
+.touch-dock-btn:hover,
+.touch-dock-btn[aria-expanded="true"] {
+  background: var(--panel-hover);
+}
+
+.touch-dock-btn.running .touch-dock-dot,
+.touch-dock-btn.active .touch-dock-dot {
+  opacity: 1;
+}
+
+.touch-dock-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+}
+
+.touch-dock-sep {
+  width: 1px;
+  height: 28px;
+  margin: 0 4px;
+  background: var(--panel-edge);
+}
+
+.touch-status {
+  min-width: 56px;
+  gap: 8px;
+}
+
+.touch-clock {
+  min-width: 56px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 0 12px;
+}
+
+/* ========== Touch app grid ========== */
+
+.touch-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px 100px;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+}
+
+.touch-grid-inner {
+  width: min(980px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.touch-search-wrap {
+  position: relative;
+  width: min(380px, 100%);
+}
+
+.touch-search-wrap .sym {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.touch-search {
+  width: 100%;
+  height: 42px;
+  padding: 0 16px 0 40px;
+  border: none;
+  border-radius: 999px;
+  background: var(--popup-bg);
+  color: var(--surface-fg);
+  font: inherit;
+  font-size: 15px;
+  box-shadow: var(--shadow);
+  outline: none;
+}
+
+.touch-search::placeholder {
+  color: var(--surface-fg-dim);
+}
+
+.touch-apps {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 16px 12px;
+  align-content: start;
+  padding: 8px;
+}
+
+.touch-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 10px;
+  border-radius: 18px;
+  color: #f4fafc;
+  transition: background var(--transition-fast);
+}
+
+.touch-app img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.touch-app span {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.touch-app:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Hide chooser slightly when popovers open for clarity */
+.desktop.menu-open .layout-chooser,
+.desktop.popover-open .layout-chooser {
+  opacity: 0.12;
   pointer-events: none;
 }

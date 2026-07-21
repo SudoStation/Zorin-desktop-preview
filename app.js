@@ -1,7 +1,7 @@
 /**
  * Zorin OS desktop preview — interactive shell
- * Defaults: Windows-style bottom taskbar (zorin-taskbar), Zorin Menu,
- * ZorinBlue-Dark / ZorinBlue-Light themes, Nautilus (Files).
+ * Core layouts: Windows-like, Windows List-like, Touch, GNOME Shell-like
+ * Themes: ZorinBlue-Dark / ZorinBlue-Light
  */
 
 /* ---------- App / category data ---------- */
@@ -16,8 +16,6 @@ const PINNED = [
 ];
 
 const CATEGORIES = [
-  { id: "pinned", name: "Pinned", icon: "assets/actions/view-app-grid-symbolic.svg", symbolic: true },
-  { id: "all", name: "All Apps", icon: "assets/actions/view-grid-symbolic.svg", symbolic: true },
   { id: "accessories", name: "Accessories", icon: "assets/menu/applications-accessories.png" },
   { id: "graphics", name: "Graphics", icon: "assets/menu/applications-graphics.png" },
   { id: "internet", name: "Internet", icon: "assets/menu/applications-internet.png" },
@@ -25,7 +23,22 @@ const CATEGORIES = [
   { id: "multimedia", name: "Sound & Video", icon: "assets/menu/applications-multimedia.png" },
   { id: "system", name: "System Tools", icon: "assets/menu/applications-system.png" },
   { id: "utilities", name: "Utilities", icon: "assets/menu/applications-utilities.png" },
-  { id: "prefs", name: "Preferences", icon: "assets/menu/preferences-desktop.png" },
+];
+
+const MENU_PLACES = [
+  { id: "home", name: "Home", icon: "assets/places/user-home.png", place: "home" },
+  { id: "desktop", name: "Desktop", icon: "assets/places/user-desktop.png", place: "desktop" },
+  { id: "documents", name: "Documents", icon: "assets/places/folder-documents.png", place: "documents" },
+  { id: "downloads", name: "Downloads", icon: "assets/places/folder-download.png", place: "downloads" },
+  { id: "music", name: "Music", icon: "assets/places/folder-music.png", place: "music" },
+  { id: "pictures", name: "Pictures", icon: "assets/places/folder-pictures.png", place: "pictures" },
+  { id: "videos", name: "Videos", icon: "assets/places/folder-videos.png", place: "videos" },
+];
+
+const MENU_SHORTCUTS = [
+  { id: "software", name: "Software", icon: "assets/apps/org.gnome.Software.png", app: "software" },
+  { id: "settings", name: "Settings", icon: "assets/apps/preferences-system.png", app: "settings" },
+  { id: "appearance", name: "Zorin Appearance", icon: "assets/apps/preferences-desktop.png", app: "settings" },
 ];
 
 const APPS = [
@@ -267,9 +280,12 @@ const SIDEBAR = [
   { id: "other", label: "Other Locations", icon: "assets/places/computer.png" },
 ];
 
+
 /* ---------- DOM ---------- */
 
 const desktop = document.getElementById("desktop");
+const layoutChooser = document.getElementById("layout-chooser");
+
 const menuBtn = document.getElementById("menu-btn");
 const zorinMenu = document.getElementById("zorin-menu");
 const menuSearch = document.getElementById("menu-search");
@@ -277,9 +293,18 @@ const menuCategories = document.getElementById("menu-categories");
 const menuApps = document.getElementById("menu-apps");
 const menuEmpty = document.getElementById("menu-empty");
 const menuSectionLabel = document.getElementById("menu-section-label");
+const menuHome = document.getElementById("menu-home");
+const menuAppsPane = document.getElementById("menu-apps-pane");
+const menuAllApps = document.getElementById("menu-all-apps");
+const menuPlaces = document.getElementById("menu-places");
+const menuShortcuts = document.getElementById("menu-shortcuts");
 
 const clockBtn = document.getElementById("clock-btn");
 const clockText = document.getElementById("clock-text");
+const topClockBtn = document.getElementById("top-clock-btn");
+const topClockText = document.getElementById("top-clock-text");
+const touchClockBtn = document.getElementById("touch-clock-btn");
+const touchClockText = document.getElementById("touch-clock-text");
 const calendarPopover = document.getElementById("calendar-popover");
 const calWeekday = document.getElementById("cal-weekday");
 const calFullDate = document.getElementById("cal-full-date");
@@ -289,6 +314,8 @@ const calPrev = document.getElementById("cal-prev");
 const calNext = document.getElementById("cal-next");
 
 const qsBtn = document.getElementById("qs-btn");
+const topQsBtn = document.getElementById("top-qs-btn");
+const touchQsBtn = document.getElementById("touch-qs-btn");
 const qsPopover = document.getElementById("qs-popover");
 const qsPageMain = document.getElementById("qs-page-main");
 const qsPagePower = document.getElementById("qs-page-power");
@@ -332,7 +359,26 @@ const termMin = document.getElementById("term-min");
 const termMax = document.getElementById("term-max");
 const panelTerminal = document.getElementById("panel-terminal");
 
-let selectedCategory = "pinned";
+const touchGrid = document.getElementById("touch-grid");
+const touchGridBtn = document.getElementById("touch-grid-btn");
+const touchSearch = document.getElementById("touch-search");
+const touchApps = document.getElementById("touch-apps");
+const touchDock = document.getElementById("touch-dock");
+
+const topBar = document.getElementById("top-bar");
+const activitiesBtn = document.getElementById("activities-btn");
+const gnomeOverview = document.getElementById("gnome-overview");
+const gnomeSearch = document.getElementById("gnome-search");
+const gnomeOverviewApps = document.getElementById("gnome-overview-apps");
+const gnomeDash = document.getElementById("gnome-dash");
+const dashShowApps = document.getElementById("dash-show-apps");
+
+const LAYOUTS = ["windows", "windows-list", "touch", "gnome"];
+const LAYOUT_STORAGE = "zorin-preview-layout";
+
+let currentLayout = "windows";
+/** null = home places view; "all" | category id = apps view */
+let selectedCategory = null;
 let viewYear;
 let viewMonth;
 let filesPlace = "home";
@@ -343,6 +389,8 @@ let filesFilter = "";
 let zIndexCounter = 20;
 let sessionAction = "poweroff";
 let powerProfile = "balanced";
+let activeQsTrigger = null;
+let activeClockTrigger = null;
 
 const POWER_PROFILES = {
   "power-saver": {
@@ -359,6 +407,38 @@ const POWER_PROFILES = {
   },
 };
 
+/* ---------- Layout switching ---------- */
+
+function setLayout(layout) {
+  if (!LAYOUTS.includes(layout)) layout = "windows";
+  currentLayout = layout;
+
+  LAYOUTS.forEach((l) => desktop.classList.remove(`layout-${l}`));
+  desktop.classList.add(`layout-${layout}`);
+  desktop.dataset.layout = layout;
+
+  // Show/hide chrome elements that use [hidden] in HTML
+  const panel = document.getElementById("panel");
+  const isWindows = layout === "windows" || layout === "windows-list";
+  if (panel) panel.hidden = !isWindows;
+  if (topBar) topBar.hidden = layout !== "gnome";
+  if (gnomeDash) gnomeDash.hidden = layout !== "gnome";
+  if (touchDock) touchDock.hidden = layout !== "touch";
+
+  layoutChooser.querySelectorAll(".layout-opt").forEach((btn) => {
+    const active = btn.dataset.layout === layout;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+
+  try {
+    localStorage.setItem(LAYOUT_STORAGE, layout);
+  } catch (_) {}
+
+  closeAll();
+  updateTaskIndicators();
+}
+
 /* ---------- Clock ---------- */
 
 function formatPanelClock(date) {
@@ -371,8 +451,26 @@ function formatPanelClock(date) {
   return `${weekday} ${time}`;
 }
 
+function formatShortClock(date) {
+  return date.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function formatTopClock(date) {
+  const weekday = date.toLocaleDateString(undefined, { weekday: "short" });
+  const day = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const time = formatShortClock(date);
+  return `${weekday} ${day}  ${time}`;
+}
+
 function tickClock() {
-  clockText.textContent = formatPanelClock(new Date());
+  const now = new Date();
+  if (clockText) clockText.textContent = formatPanelClock(now);
+  if (topClockText) topClockText.textContent = formatTopClock(now);
+  if (touchClockText) touchClockText.textContent = formatShortClock(now);
 }
 
 tickClock();
@@ -431,7 +529,29 @@ function buildCalendar() {
 
 setViewToToday();
 
-/* ---------- Menu ---------- */
+/* ---------- Menu (Windows-like) ---------- */
+
+function showMenuHome() {
+  selectedCategory = null;
+  menuHome.hidden = false;
+  menuAppsPane.hidden = true;
+  menuAllApps.classList.remove("selected");
+  menuCategories.querySelectorAll(".zm-cat").forEach((el) => el.classList.remove("selected"));
+}
+
+function showMenuApps(categoryId) {
+  selectedCategory = categoryId;
+  menuHome.hidden = true;
+  menuAppsPane.hidden = false;
+  menuAllApps.classList.toggle("selected", categoryId === "all");
+  menuCategories.querySelectorAll(".zm-cat").forEach((el) => {
+    el.classList.toggle("selected", el.dataset.category === categoryId);
+  });
+  const cat = CATEGORIES.find((c) => c.id === categoryId);
+  menuSectionLabel.textContent =
+    categoryId === "all" ? "All Apps" : cat ? cat.name : "Apps";
+  renderMenuApps();
+}
 
 function renderCategories() {
   menuCategories.innerHTML = "";
@@ -441,36 +561,57 @@ function renderCategories() {
     btn.className = "zm-cat" + (cat.id === selectedCategory ? " selected" : "");
     btn.dataset.category = cat.id;
     btn.setAttribute("role", "listitem");
-    const imgClass = cat.symbolic ? "sym" : "";
-    btn.innerHTML = `<img class="${imgClass}" src="${cat.icon}" alt="" draggable="false" /><span>${cat.name}</span>`;
+    btn.innerHTML = `
+      <img src="${cat.icon}" alt="" draggable="false" />
+      <span>${cat.name}</span>
+      <img class="sym zm-cat-chevron" src="assets/status/go-next-symbolic.svg" alt="" draggable="false" />
+    `;
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      selectCategory(cat.id);
+      showMenuApps(cat.id);
     });
     menuCategories.appendChild(btn);
   }
 }
 
-function selectCategory(id) {
-  selectedCategory = id;
-  menuCategories.querySelectorAll(".zm-cat").forEach((el) => {
-    el.classList.toggle("selected", el.dataset.category === id);
-  });
-  const cat = CATEGORIES.find((c) => c.id === id);
-  menuSectionLabel.textContent = cat ? cat.name : "Apps";
-  renderMenuApps();
+function renderMenuPlaces() {
+  menuPlaces.innerHTML = "";
+  for (const p of MENU_PLACES) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "zm-place";
+    btn.setAttribute("role", "listitem");
+    btn.innerHTML = `<img src="${p.icon}" alt="" draggable="false" /><span>${p.name}</span>`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeMenu();
+      openFiles(p.place);
+    });
+    menuPlaces.appendChild(btn);
+  }
+}
+
+function renderMenuShortcuts() {
+  menuShortcuts.innerHTML = "";
+  for (const s of MENU_SHORTCUTS) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "zm-shortcut";
+    btn.setAttribute("role", "listitem");
+    btn.innerHTML = `<img src="${s.icon}" alt="" draggable="false" /><span>${s.name}</span>`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      launchApp(s.app);
+    });
+    menuShortcuts.appendChild(btn);
+  }
 }
 
 function getAppsForCategory(catId, filter = "") {
   const q = filter.trim().toLowerCase();
   let list;
-  if (catId === "pinned") {
-    list = PINNED.map((p) => {
-      const full = APPS.find((a) => a.id === p.id);
-      return full || { ...p, categories: ["all"] };
-    });
-  } else if (catId === "all") {
-    list = APPS.slice();
+  if (catId === "all" || !catId) {
+    list = APPS.slice().sort((a, b) => a.name.localeCompare(b.name));
   } else {
     list = APPS.filter((a) => a.categories.includes(catId));
   }
@@ -479,20 +620,24 @@ function getAppsForCategory(catId, filter = "") {
       (a) =>
         a.name.toLowerCase().includes(q) ||
         (a.desc && a.desc.toLowerCase().includes(q))
-    );
+    ).sort((a, b) => a.name.localeCompare(b.name));
   }
   return list;
 }
 
 function renderMenuApps(filter) {
   const q = filter !== undefined ? filter : menuSearch.value;
-  const list = getAppsForCategory(selectedCategory, q);
+  const catId = selectedCategory || "all";
+  const list = getAppsForCategory(catId, q);
 
   if (q.trim()) {
     menuSectionLabel.textContent = "Search results";
-  } else {
+    menuHome.hidden = true;
+    menuAppsPane.hidden = false;
+  } else if (selectedCategory) {
     const cat = CATEGORIES.find((c) => c.id === selectedCategory);
-    menuSectionLabel.textContent = cat ? cat.name : "Apps";
+    menuSectionLabel.textContent =
+      selectedCategory === "all" ? "All Apps" : cat ? cat.name : "Apps";
   }
 
   menuApps.innerHTML = "";
@@ -527,18 +672,21 @@ function closeMenu() {
   zorinMenu.hidden = true;
   setExpanded(menuBtn, false);
   menuSearch.value = "";
-  selectedCategory = "pinned";
-  renderCategories();
-  renderMenuApps("");
+  selectedCategory = null;
+  showMenuHome();
+  desktop.classList.remove("menu-open");
 }
 
 function openMenu() {
   closePopovers();
+  closeTouchGrid();
+  closeGnomeOverview();
   zorinMenu.hidden = false;
   setExpanded(menuBtn, true);
-  selectedCategory = "pinned";
+  menuSearch.value = "";
+  showMenuHome();
   renderCategories();
-  renderMenuApps("");
+  desktop.classList.add("menu-open");
   requestAnimationFrame(() => menuSearch.focus());
 }
 
@@ -546,6 +694,94 @@ function toggleMenu() {
   if (zorinMenu.hidden) openMenu();
   else closeMenu();
 }
+
+/* ---------- Touch grid / GNOME overview ---------- */
+
+function renderIconGrid(container, filter = "") {
+  const q = filter.trim().toLowerCase();
+  let list = APPS.slice().sort((a, b) => a.name.localeCompare(b.name));
+  if (q) {
+    list = list.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        (a.desc && a.desc.toLowerCase().includes(q))
+    );
+  }
+  container.innerHTML = "";
+  const isTouch = container === touchApps;
+  for (const app of list) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = isTouch ? "touch-app" : "gnome-ov-app";
+    btn.setAttribute("role", "listitem");
+    btn.innerHTML = `<img src="${app.icon}" alt="" draggable="false" /><span>${app.name}</span>`;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      launchApp(app.id);
+    });
+    container.appendChild(btn);
+  }
+}
+
+function openTouchGrid() {
+  closeMenu();
+  closePopovers();
+  closeGnomeOverview();
+  touchGrid.hidden = false;
+  setExpanded(touchGridBtn, true);
+  touchSearch.value = "";
+  renderIconGrid(touchApps, "");
+  desktop.classList.add("menu-open");
+  requestAnimationFrame(() => touchSearch.focus());
+}
+
+function closeTouchGrid() {
+  if (!touchGrid) return;
+  touchGrid.hidden = true;
+  setExpanded(touchGridBtn, false);
+  if (touchSearch) touchSearch.value = "";
+  desktop.classList.remove("menu-open");
+}
+
+function toggleTouchGrid() {
+  if (touchGrid.hidden) openTouchGrid();
+  else closeTouchGrid();
+}
+
+function setGnomeOverviewExpanded(open) {
+  setExpanded(activitiesBtn, open);
+  setExpanded(dashShowApps, open);
+  if (dashShowApps) {
+    dashShowApps.classList.toggle("active", open);
+  }
+}
+
+function openGnomeOverview() {
+  closeMenu();
+  closePopovers();
+  closeTouchGrid();
+  gnomeOverview.hidden = false;
+  setGnomeOverviewExpanded(true);
+  gnomeSearch.value = "";
+  renderIconGrid(gnomeOverviewApps, "");
+  desktop.classList.add("menu-open");
+  requestAnimationFrame(() => gnomeSearch.focus());
+}
+
+function closeGnomeOverview() {
+  if (!gnomeOverview) return;
+  gnomeOverview.hidden = true;
+  setGnomeOverviewExpanded(false);
+  if (gnomeSearch) gnomeSearch.value = "";
+  desktop.classList.remove("menu-open");
+}
+
+function toggleGnomeOverview() {
+  if (!gnomeOverview || gnomeOverview.hidden) openGnomeOverview();
+  else closeGnomeOverview();
+}
+
+/* ---------- Quick Settings / popovers ---------- */
 
 function showQsMainPage() {
   if (qsPageMain) qsPageMain.hidden = false;
@@ -564,32 +800,64 @@ function closePowerMenu() {
   setExpanded(powerBtn, false);
 }
 
+function qsTriggers() {
+  return [qsBtn, topQsBtn, touchQsBtn].filter(Boolean);
+}
+
+function clockTriggers() {
+  return [clockBtn, topClockBtn, touchClockBtn].filter(Boolean);
+}
+
 function closePopovers() {
   calendarPopover.hidden = true;
   qsPopover.hidden = true;
   closePowerMenu();
   showQsMainPage();
-  setExpanded(clockBtn, false);
-  setExpanded(qsBtn, false);
+  clockTriggers().forEach((b) => setExpanded(b, false));
+  qsTriggers().forEach((b) => setExpanded(b, false));
+  activeQsTrigger = null;
+  activeClockTrigger = null;
+  desktop.classList.remove("popover-open");
 }
 
 function closeAll() {
   closeMenu();
   closePopovers();
+  closeTouchGrid();
+  closeGnomeOverview();
 }
 
 function togglePopover(popover, btn) {
-  const wasOpen = !popover.hidden;
+  const wasOpen = !popover.hidden && (
+    (popover === qsPopover && activeQsTrigger === btn) ||
+    (popover === calendarPopover && activeClockTrigger === btn) ||
+    (popover === qsPopover && !activeQsTrigger) ||
+    (popover === calendarPopover && !activeClockTrigger)
+  );
+  // If same popover open from this btn, close; else open for this btn
+  const already = !popover.hidden && (
+    (popover === qsPopover && activeQsTrigger === btn) ||
+    (popover === calendarPopover && activeClockTrigger === btn)
+  );
+
   closeMenu();
+  closeTouchGrid();
+  if (currentLayout === "gnome" && popover !== calendarPopover) {
+    /* keep overview if opening from dash? no — close */
+  }
   closePopovers();
-  if (!wasOpen) {
+
+  if (!already) {
     popover.hidden = false;
     setExpanded(btn, true);
+    desktop.classList.add("popover-open");
     if (popover === calendarPopover) {
+      activeClockTrigger = btn;
       setViewToToday();
       buildCalendar();
     }
     if (popover === qsPopover) {
+      activeQsTrigger = btn;
       showQsMainPage();
     }
   }
@@ -608,7 +876,6 @@ function setPowerProfile(id) {
     btn.setAttribute("aria-selected", selected ? "true" : "false");
   });
 
-  // Power Mode stays "active" (profile always applies); not an on/off tile
   if (powerModeToggle) {
     powerModeToggle.classList.add("active");
     powerModeToggle.setAttribute("aria-pressed", "true");
@@ -666,16 +933,40 @@ function bringToFront(win) {
 function updateTaskIndicators() {
   const filesOpen = !filesWindow.hidden && !filesWindow.classList.contains("minimized");
   const termOpen = !termWindow.hidden && !termWindow.classList.contains("minimized");
+  const filesRunning = !filesWindow.hidden;
+  const termRunning = !termWindow.hidden;
 
-  panelFiles.classList.toggle("running", !filesWindow.hidden);
-  panelFiles.classList.toggle("active", filesOpen && filesWindow.style.zIndex >= (termWindow.style.zIndex || "0"));
+  const mark = (el, running, active) => {
+    if (!el) return;
+    el.classList.toggle("running", running);
+    el.classList.toggle("active", active);
+  };
 
-  panelTerminal.classList.toggle("running", !termWindow.hidden);
-  panelTerminal.classList.toggle("active", termOpen && termWindow.style.zIndex > (filesWindow.style.zIndex || "0"));
+  const filesActive = filesOpen && Number(filesWindow.style.zIndex || 0) >= Number(termWindow.style.zIndex || 0);
+  const termActive = termOpen && Number(termWindow.style.zIndex || 0) > Number(filesWindow.style.zIndex || 0);
+
+  mark(panelFiles, filesRunning, filesActive);
+  mark(panelTerminal, termRunning, termActive);
+  mark(document.getElementById("dash-files"), filesRunning, filesActive);
+  mark(document.getElementById("dash-terminal"), termRunning, termActive);
+  mark(document.getElementById("touch-files"), filesRunning, filesActive);
+  mark(document.getElementById("touch-terminal"), termRunning, termActive);
+
+  // Windows List-like: label reflects the open window title when running
+  const filesLabel = panelFiles?.querySelector(".panel-app-label");
+  if (filesLabel) {
+    filesLabel.textContent = filesRunning
+      ? (filesPathLabel?.textContent || "Home")
+      : "Files";
+  }
+  const termLabel = panelTerminal?.querySelector(".panel-app-label");
+  if (termLabel) {
+    termLabel.textContent = termRunning ? "user@zorin: ~" : "Terminal";
+  }
 }
 
 function launchApp(id) {
-  closeMenu();
+  closeAll();
   if (id === "files") {
     openFiles("home");
     return;
@@ -684,12 +975,49 @@ function launchApp(id) {
     openTerminal();
     return;
   }
-  // Silent stub — real DE opens the app without a toast
-  const panelApp = document.querySelector(`.panel-app[data-app="${id}"]`);
-  if (panelApp) {
-    panelApp.classList.add("running");
-    setTimeout(() => panelApp.classList.remove("running"), 500);
+  // Flash running on matching launchers
+  document.querySelectorAll(`[data-app="${id}"]`).forEach((el) => {
+    el.classList.add("running");
+    setTimeout(() => {
+      if (id !== "files" && id !== "terminal") el.classList.remove("running");
+    }, 600);
+  });
+}
+
+function handleLauncherClick(id) {
+  if (id === "files") {
+    if (filesWindow.hidden) openFiles("home");
+    else if (filesWindow.classList.contains("minimized")) {
+      filesWindow.classList.remove("minimized");
+      bringToFront(filesWindow);
+      updateTaskIndicators();
+    } else if (filesWindow.style.zIndex === String(zIndexCounter)) {
+      filesWindow.classList.add("minimized");
+      updateTaskIndicators();
+    } else {
+      filesWindow.classList.remove("minimized");
+      bringToFront(filesWindow);
+      updateTaskIndicators();
+    }
+    return;
   }
+  if (id === "terminal") {
+    if (termWindow.hidden) openTerminal();
+    else if (termWindow.classList.contains("minimized")) {
+      termWindow.classList.remove("minimized");
+      bringToFront(termWindow);
+      updateTaskIndicators();
+    } else if (termWindow.style.zIndex === String(zIndexCounter)) {
+      termWindow.classList.add("minimized");
+      updateTaskIndicators();
+    } else {
+      termWindow.classList.remove("minimized");
+      bringToFront(termWindow);
+      updateTaskIndicators();
+    }
+    return;
+  }
+  launchApp(id);
 }
 
 /* ---------- Files (Nautilus) ---------- */
@@ -779,6 +1107,7 @@ function navigateFiles(placeId, pushHistory) {
   filesFilter = "";
   if (filesSearchInput) filesSearchInput.value = "";
   renderFilesContent();
+  updateTaskIndicators();
 }
 
 function openFiles(placeId = "home") {
@@ -846,6 +1175,9 @@ function updateVolumeIcons(value) {
   else if (value > 0) icon = "assets/status/audio-volume-low-symbolic.svg";
   if (panelVolumeIcon) panelVolumeIcon.src = icon;
   if (qsVolumeIcon) qsVolumeIcon.src = icon;
+  document.querySelectorAll(".top-volume-icon, .touch-volume-icon").forEach((el) => {
+    el.src = icon;
+  });
 }
 
 /* ---------- Drag windows ---------- */
@@ -888,13 +1220,36 @@ function enableDrag(win, handle) {
 
 /* ---------- Event wiring ---------- */
 
+layoutChooser.querySelectorAll(".layout-opt").forEach((btn) => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setLayout(btn.dataset.layout);
+  });
+});
+layoutChooser.addEventListener("click", (e) => e.stopPropagation());
+
 menuBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   toggleMenu();
 });
 
+menuAllApps.addEventListener("click", (e) => {
+  e.stopPropagation();
+  showMenuApps("all");
+});
+
 menuSearch.addEventListener("input", () => {
-  renderMenuApps(menuSearch.value);
+  const q = menuSearch.value;
+  if (q.trim()) {
+    if (menuHome) menuHome.hidden = true;
+    if (menuAppsPane) menuAppsPane.hidden = false;
+    selectedCategory = selectedCategory || "all";
+    renderMenuApps(q);
+  } else if (!selectedCategory) {
+    showMenuHome();
+  } else {
+    renderMenuApps("");
+  }
 });
 
 menuSearch.addEventListener("keydown", (e) => {
@@ -905,13 +1260,19 @@ menuSearch.addEventListener("keydown", (e) => {
 });
 
 document.getElementById("menu-lock").addEventListener("click", () => openSessionDialog("lock"));
-document.getElementById("menu-logout").addEventListener("click", () => openSessionDialog("logout"));
+document.getElementById("menu-switch")?.addEventListener("click", () => openSessionDialog("logout"));
 document.getElementById("menu-power").addEventListener("click", () => openSessionDialog("poweroff"));
 
-clockBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  togglePopover(calendarPopover, clockBtn);
-});
+function wireClock(btn) {
+  if (!btn) return;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePopover(calendarPopover, btn);
+  });
+}
+wireClock(clockBtn);
+wireClock(topClockBtn);
+wireClock(touchClockBtn);
 
 calPrev.addEventListener("click", (e) => {
   e.stopPropagation();
@@ -933,10 +1294,16 @@ calNext.addEventListener("click", (e) => {
   buildCalendar();
 });
 
-qsBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  togglePopover(qsPopover, qsBtn);
-});
+function wireQs(btn) {
+  if (!btn) return;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePopover(qsPopover, btn);
+  });
+}
+wireQs(qsBtn);
+wireQs(topQsBtn);
+wireQs(touchQsBtn);
 
 volumeSlider.addEventListener("input", () => {
   updateVolumeIcons(Number(volumeSlider.value));
@@ -947,15 +1314,12 @@ if (brightnessSlider) {
   brightnessSlider.addEventListener("input", updateBrightnessFill);
 }
 
-/* ---------- Quick Settings toggles ---------- */
-
 qsPopover.querySelectorAll(".qs-toggle").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const kind = btn.dataset.toggle;
 
     if (kind === "power-mode") {
-      // Opens power-profiles subpage — not an on/off switch
       showQsPowerPage();
       return;
     }
@@ -974,7 +1338,6 @@ qsPopover.querySelectorAll(".qs-toggle").forEach((btn) => {
       return;
     }
 
-    // Network, Bluetooth, Do Not Disturb — simple toggles
     const pressed = btn.getAttribute("aria-pressed") === "true";
     btn.setAttribute("aria-pressed", pressed ? "false" : "true");
     btn.classList.toggle("active", !pressed);
@@ -990,7 +1353,6 @@ document.querySelectorAll(".qs-profile").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     setPowerProfile(btn.dataset.profile);
-    // Return to main QS page after selecting a profile (GNOME-like)
     showQsMainPage();
   });
 });
@@ -1018,7 +1380,6 @@ document.getElementById("qs-settings")?.addEventListener("click", (e) => {
 
 document.getElementById("qs-screenshot")?.addEventListener("click", (e) => {
   e.stopPropagation();
-  // Silent stub — real DE opens the screenshot UI
 });
 
 powerMenu?.querySelectorAll(".power-menu-item").forEach((item) => {
@@ -1034,7 +1395,6 @@ powerMenu?.querySelectorAll(".power-menu-item").forEach((item) => {
   });
 });
 
-// Defaults
 setDarkStyle(true);
 setNightLight(false);
 setPowerProfile("balanced");
@@ -1047,7 +1407,6 @@ sessionOverlay.addEventListener("click", (e) => {
   if (e.target === sessionOverlay) closeSessionDialog();
 });
 
-/* Desktop icons */
 document.querySelectorAll(".desk-icon").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".desk-icon").forEach((b) => b.classList.remove("selected"));
@@ -1058,53 +1417,43 @@ document.querySelectorAll(".desk-icon").forEach((btn) => {
   });
 });
 
-/* Panel launchers */
-document.querySelectorAll(".panel-app").forEach((btn) => {
+document.querySelectorAll(".panel-app, .dash-item[data-app], .touch-dock-btn[data-app]").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    const id = btn.dataset.app;
-    if (id === "files") {
-      if (filesWindow.hidden) openFiles("home");
-      else if (filesWindow.classList.contains("minimized")) {
-        filesWindow.classList.remove("minimized");
-        bringToFront(filesWindow);
-        updateTaskIndicators();
-      } else if (filesWindow.style.zIndex === String(zIndexCounter)) {
-        filesWindow.classList.add("minimized");
-        updateTaskIndicators();
-      } else {
-        filesWindow.classList.remove("minimized");
-        bringToFront(filesWindow);
-        updateTaskIndicators();
-      }
-      return;
-    }
-    if (id === "terminal") {
-      if (termWindow.hidden) openTerminal();
-      else if (termWindow.classList.contains("minimized")) {
-        termWindow.classList.remove("minimized");
-        bringToFront(termWindow);
-        updateTaskIndicators();
-      } else if (termWindow.style.zIndex === String(zIndexCounter)) {
-        termWindow.classList.add("minimized");
-        updateTaskIndicators();
-      } else {
-        termWindow.classList.remove("minimized");
-        bringToFront(termWindow);
-        updateTaskIndicators();
-      }
-      return;
-    }
-    launchApp(id);
+    handleLauncherClick(btn.dataset.app);
   });
 });
 
-showDesktopBtn.addEventListener("click", (e) => {
+showDesktopBtn?.addEventListener("click", (e) => {
   e.stopPropagation();
   desktop.classList.toggle("show-desktop");
 });
 
-/* Files window controls */
+touchGridBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleTouchGrid();
+});
+
+touchSearch?.addEventListener("input", () => {
+  renderIconGrid(touchApps, touchSearch.value);
+});
+
+activitiesBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  e.preventDefault();
+  toggleGnomeOverview();
+});
+
+dashShowApps?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  e.preventDefault();
+  toggleGnomeOverview();
+});
+
+gnomeSearch?.addEventListener("input", () => {
+  renderIconGrid(gnomeOverviewApps, gnomeSearch.value);
+});
+
 filesClose.addEventListener("click", closeFiles);
 filesMin.addEventListener("click", () => {
   filesWindow.classList.add("minimized");
@@ -1167,7 +1516,6 @@ filesSearchInput.addEventListener("input", () => {
   renderFilesContent();
 });
 
-/* Terminal controls */
 termClose.addEventListener("click", closeTerminal);
 termMin.addEventListener("click", () => {
   termWindow.classList.add("minimized");
@@ -1184,7 +1532,6 @@ termWindow.addEventListener("pointerdown", () => {
 enableDrag(filesWindow, filesWindow.querySelector(".files-headerbar"));
 enableDrag(termWindow, termWindow.querySelector(".term-headerbar"));
 
-/* Global dismiss */
 document.addEventListener("click", (e) => {
   if (
     !zorinMenu.hidden &&
@@ -1195,14 +1542,33 @@ document.addEventListener("click", (e) => {
     closeMenu();
   }
   if (
-    !calendarPopover.hidden &&
-    !calendarPopover.contains(e.target) &&
-    e.target !== clockBtn &&
-    !clockBtn.contains(e.target)
+    touchGrid &&
+    !touchGrid.hidden &&
+    !touchGrid.contains(e.target) &&
+    e.target !== touchGridBtn &&
+    !(touchGridBtn && touchGridBtn.contains(e.target))
   ) {
-    calendarPopover.hidden = true;
-    setExpanded(clockBtn, false);
+    closeTouchGrid();
   }
+  if (
+    gnomeOverview &&
+    !gnomeOverview.hidden &&
+    !gnomeOverview.contains(e.target) &&
+    e.target !== activitiesBtn &&
+    !(activitiesBtn && activitiesBtn.contains(e.target)) &&
+    e.target !== dashShowApps &&
+    !(dashShowApps && dashShowApps.contains(e.target))
+  ) {
+    closeGnomeOverview();
+  }
+
+  const clockHit = clockTriggers().some((b) => b === e.target || b.contains(e.target));
+  if (!calendarPopover.hidden && !calendarPopover.contains(e.target) && !clockHit) {
+    calendarPopover.hidden = true;
+    clockTriggers().forEach((b) => setExpanded(b, false));
+    activeClockTrigger = null;
+  }
+
   const qsPowerBtn = document.getElementById("qs-power");
   if (
     powerMenu &&
@@ -1213,17 +1579,20 @@ document.addEventListener("click", (e) => {
   ) {
     closePowerMenu();
   }
+
+  const qsHit = qsTriggers().some((b) => b === e.target || b.contains(e.target));
   if (
     !qsPopover.hidden &&
     !qsPopover.contains(e.target) &&
-    e.target !== qsBtn &&
-    !qsBtn.contains(e.target) &&
+    !qsHit &&
     !(powerMenu && powerMenu.contains(e.target))
   ) {
     qsPopover.hidden = true;
     closePowerMenu();
     showQsMainPage();
-    setExpanded(qsBtn, false);
+    qsTriggers().forEach((b) => setExpanded(b, false));
+    activeQsTrigger = null;
+    desktop.classList.remove("popover-open");
   }
 });
 
@@ -1245,14 +1614,23 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* Prevent menu/popover clicks from closing via document handler bubble issues */
 zorinMenu.addEventListener("click", (e) => e.stopPropagation());
 calendarPopover.addEventListener("click", (e) => e.stopPropagation());
 qsPopover.addEventListener("click", (e) => e.stopPropagation());
 powerMenu?.addEventListener("click", (e) => e.stopPropagation());
+touchGrid?.addEventListener("click", (e) => e.stopPropagation());
+gnomeOverview?.addEventListener("click", (e) => e.stopPropagation());
 
 /* Init */
 renderCategories();
-renderMenuApps("");
+renderMenuPlaces();
+renderMenuShortcuts();
+showMenuHome();
 updateVolumeIcons(Number(volumeSlider.value));
 updateTaskIndicators();
+
+let saved = "windows";
+try {
+  saved = localStorage.getItem(LAYOUT_STORAGE) || "windows";
+} catch (_) {}
+setLayout(saved);

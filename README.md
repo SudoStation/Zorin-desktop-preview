@@ -6,7 +6,7 @@
 
 # Zorin Desktop Preview
 
-Interactive browser mockup of the Zorin OS shell — ZorinBlue Dark/Light. Static HTML/CSS/JS — no backend.
+Interactive browser mockup of the Zorin OS shell — all four Core layouts (Windows-like, Windows List, Touch, GNOME Shell-like), ZorinBlue Dark/Light. Static HTML/CSS/JS — no backend.
 
 ### or run locally
 
