@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zorin Desktop Preview</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="desktop" class="desktop" aria-label="Zorin OS desktop preview">
+    <div class="wallpaper" role="presentation"></div>
+
+    <!-- Desktop icons (DING) -->
+    <div class="desktop-icons" id="desktop-icons" aria-label="Desktop icons">
+      <button type="button" class="desk-icon" data-place="home" title="Home">
+        <img src="assets/places/user-home.png" alt="" draggable="false" />
+        <span>Home</span>
+      </button>
+      <button type="button" class="desk-icon" data-place="trash" title="Trash">
+        <img src="assets/places/user-trash.svg" alt="" draggable="false" />
+        <span>Trash</span>
+      </button>
+    </div>
+
+    <!-- Zorin Menu (Arc Menu style, default Windows layout) -->
+    <div class="zorin-menu" id="zorin-menu" role="dialog" aria-label="Zorin Menu" hidden>
+      <div class="zorin-menu-panel">
+        <div class="zm-search-wrap">
+          <img class="sym zm-search-icon" src="assets/actions/search-symbolic.svg" alt="" draggable="false" />
+          <input
+            type="search"
+            id="menu-search"
+            class="zm-search"
+            placeholder="Type to search…"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search applications"
+          />
+        </div>
+
+        <div class="zm-body">
+          <aside class="zm-categories" id="menu-categories" role="list" aria-label="Categories">
+            <!-- filled by JS -->
+          </aside>
+          <div class="zm-apps-pane">
+            <div class="zm-section-label" id="menu-section-label">Pinned</div>
+            <div class="zm-apps" id="menu-apps" role="list" aria-label="Applications">
+              <!-- filled by JS -->
+            </div>
+            <p class="zm-empty" id="menu-empty" hidden>No results found</p>
+          </div>
+        </div>
+
+        <footer class="zm-footer">
+          <div class="zm-user">
+            <img class="sym zm-avatar" src="assets/status/avatar-default-symbolic.svg" alt="" draggable="false" />
+            <span class="zm-username">User</span>
+          </div>
+          <div class="zm-session">
+            <button type="button" class="zm-session-btn" id="menu-lock" title="Lock" aria-label="Lock">
+              <img class="sym" src="assets/status/system-lock-screen-symbolic.svg" alt="" draggable="false" />
+            </button>
+            <button type="button" class="zm-session-btn" id="menu-logout" title="Log Out" aria-label="Log Out">
+              <img class="sym" src="assets/status/system-log-out-symbolic.svg" alt="" draggable="false" />
+            </button>
+            <button type="button" class="zm-session-btn" id="menu-power" title="Power Off" aria-label="Power Off">
+              <img class="sym" src="assets/status/system-shutdown-symbolic.svg" alt="" draggable="false" />
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Calendar + notifications style popover (clock) -->
+    <div class="calendar-popover" id="calendar-popover" role="dialog" aria-label="Calendar" hidden>
+      <div class="cal-today-header">
+        <div class="cal-today-day" id="cal-weekday">Monday</div>
+        <div class="cal-today-date" id="cal-full-date">21 July 2026</div>
+      </div>
+      <div class="cal-month-nav">
+        <button type="button" class="cal-nav-btn" id="cal-prev" aria-label="Previous month">
+          <img class="sym" src="assets/actions/pan-start-symbolic.svg" alt="" draggable="false" />
+        </button>
+        <span class="cal-month-label" id="cal-month-label">July 2026</span>
+        <button type="button" class="cal-nav-btn" id="cal-next" aria-label="Next month">
+          <img class="sym" src="assets/actions/pan-end-symbolic.svg" alt="" draggable="false" />
+        </button>
+      </div>
+      <div class="cal-weekdays" aria-hidden="true">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-events">
+        <div class="cal-events-title">Notifications</div>
+        <div class="cal-events-empty">No Notifications</div>
+      </div>
+    </div>
+
+    <!-- Night Light warm overlay -->
+    <div class="night-light-overlay" id="night-light-overlay" aria-hidden="true"></div>
+
+    <!-- Quick Settings (GNOME Shell system menu — used by Zorin taskbar) -->
+    <div class="qs-popover" id="qs-popover" role="dialog" aria-label="Quick Settings" hidden>
+      <!-- Main page -->
+      <div class="qs-page" id="qs-page-main">
+        <div class="qs-toolbar">
+          <div class="qs-toolbar-group">
+            <button type="button" class="qs-round-btn" id="qs-screenshot" title="Screenshot" aria-label="Screenshot">
+              <img class="sym" src="assets/status/screenshooter-symbolic.svg" alt="" draggable="false" />
+            </button>
+            <button type="button" class="qs-round-btn" id="qs-settings" title="Settings" aria-label="Settings">
+              <img class="sym" src="assets/status/preferences-system-symbolic.svg" alt="" draggable="false" />
+            </button>
+          </div>
+          <div class="qs-toolbar-group">
+            <button type="button" class="qs-round-btn" id="qs-lock" title="Lock" aria-label="Lock">
+              <img class="sym" src="assets/status/system-lock-screen-symbolic.svg" alt="" draggable="false" />
+            </button>
+            <button type="button" class="qs-round-btn" id="qs-power" title="Power Off" aria-label="Power Off" aria-haspopup="true" aria-controls="power-menu" aria-expanded="false">
+              <img class="sym" src="assets/status/system-shutdown-symbolic.svg" alt="" draggable="false" />
+            </button>
+          </div>
+        </div>
+
+        <div class="qs-slider-row">
+          <img class="sym" id="qs-volume-icon" src="assets/status/audio-volume-medium-symbolic.svg" alt="" draggable="false" />
+          <input type="range" class="qs-range" id="volume-slider" min="0" max="100" value="58" aria-label="Volume" />
+          <button type="button" class="qs-chevron-btn" title="Sound settings" aria-label="Sound settings">
+            <img class="sym sym-sm" src="assets/status/go-next-symbolic.svg" alt="" draggable="false" />
+          </button>
+        </div>
+
+        <div class="qs-slider-row">
+          <img class="sym" src="assets/status/display-brightness-symbolic.svg" alt="" draggable="false" />
+          <input type="range" class="qs-range" id="brightness-slider" min="0" max="100" value="72" aria-label="Brightness" />
+        </div>
+
+        <div class="qs-toggles">
+          <button type="button" class="qs-toggle active has-menu" data-toggle="network" aria-pressed="true">
+            <span class="qs-toggle-main">
+              <img class="sym" src="assets/status/network-wired-symbolic.svg" alt="" draggable="false" />
+              <span class="qs-toggle-text">
+                <span class="qs-toggle-label">Wired</span>
+              </span>
+            </span>
+            <img class="sym sym-sm qs-toggle-chevron" src="assets/status/go-next-symbolic.svg" alt="" draggable="false" />
+          </button>
+
+          <button type="button" class="qs-toggle" data-toggle="bluetooth" aria-pressed="false">
+            <span class="qs-toggle-main">
+              <img class="sym" src="assets/status/bluetooth-active-symbolic.svg" alt="" draggable="false" />
+              <span class="qs-toggle-text">
+                <span class="qs-toggle-label">Bluetooth</span>
+              </span>
+            </span>
+            <img class="sym sym-sm qs-toggle-chevron" src="assets/status/go-next-symbolic.svg" alt="" draggable="false" />
+          </button>
+
+          <button type="button" class="qs-toggle active has-menu" data-toggle="power-mode" id="power-mode-toggle" aria-pressed="true" aria-haspopup="true" aria-controls="qs-page-power">
+            <span class="qs-toggle-main">
+              <img class="sym" id="power-mode-icon" src="assets/status/power-profile-balanced-symbolic.svg" alt="" draggable="false" />
+              <span class="qs-toggle-text">
+                <span class="qs-toggle-label">Power Mode</span>
+                <span class="qs-toggle-sub" id="power-mode-sub">Balanced</span>
+              </span>
+            </span>
+            <img class="sym sym-sm qs-toggle-chevron" src="assets/status/go-next-symbolic.svg" alt="" draggable="false" />
+          </button>
+
+          <button type="button" class="qs-toggle" data-toggle="night" id="night-light-toggle" aria-pressed="false">
+            <span class="qs-toggle-main">
+              <img class="sym" src="assets/status/night-light-symbolic.svg" alt="" draggable="false" />
+              <span class="qs-toggle-text">
+                <span class="qs-toggle-label">Night Light</span>
+              </span>
+            </span>
+          </button>
+
+          <button type="button" class="qs-toggle active" data-toggle="dark" id="dark-style-toggle" aria-pressed="true">
+            <span class="qs-toggle-main">
+              <img class="sym" src="assets/status/dark-mode-symbolic.svg" alt="" draggable="false" />
+              <span class="qs-toggle-text">
+                <span class="qs-toggle-label">Dark Style</span>
+              </span>
+            </span>
+          </button>
+
+          <button type="button" class="qs-toggle" data-toggle="dnd" aria-pressed="false">
+            <span class="qs-toggle-main">
+              <img class="sym" src="assets/status/notifications-disabled-symbolic.svg" alt="" draggable="false" />
+              <span class="qs-toggle-text">
+                <span class="qs-toggle-label">Do Not Disturb</span>
+              </span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Power Mode subpage (power-profiles-daemon) -->
+      <div class="qs-page" id="qs-page-power" hidden>
+        <div class="qs-sub-header">
+          <button type="button" class="qs-back-btn" id="qs-power-back" aria-label="Back">
+            <img class="sym" src="assets/actions/go-previous-symbolic.svg" alt="" draggable="false" />
+          </button>
+          <span class="qs-sub-title">Power Mode</span>
+        </div>
+        <div class="qs-profile-list" role="listbox" aria-label="Power Mode">
+          <button type="button" class="qs-profile" role="option" data-profile="power-saver" aria-selected="false">
+            <img class="sym" src="assets/status/power-profile-power-saver-symbolic.svg" alt="" draggable="false" />
+            <span class="qs-profile-text">
+              <span class="qs-profile-name">Power Saver</span>
+              <span class="qs-profile-desc">Reduced performance and screen brightness</span>
+            </span>
+            <span class="qs-profile-check" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="qs-profile selected" role="option" data-profile="balanced" aria-selected="true">
+            <img class="sym" src="assets/status/power-profile-balanced-symbolic.svg" alt="" draggable="false" />
+            <span class="qs-profile-text">
+              <span class="qs-profile-name">Balanced</span>
+              <span class="qs-profile-desc">Standard performance and battery life</span>
+            </span>
+            <span class="qs-profile-check" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="qs-profile" role="option" data-profile="performance" aria-selected="false">
+            <img class="sym" src="assets/status/power-profile-performance-symbolic.svg" alt="" draggable="false" />
+            <span class="qs-profile-text">
+              <span class="qs-profile-name">Performance</span>
+              <span class="qs-profile-desc">High performance and power usage</span>
+            </span>
+            <span class="qs-profile-check" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Power Off menu (from QS shutdown button) -->
+    <div class="power-menu" id="power-menu" role="menu" aria-label="Power Off" hidden>
+      <div class="power-menu-header" role="presentation">
+        <img class="sym" src="assets/status/system-shutdown-symbolic.svg" alt="" draggable="false" />
+        <span>Power Off</span>
+      </div>
+      <button type="button" class="power-menu-item" role="menuitem" data-session="suspend">Suspend</button>
+      <button type="button" class="power-menu-item" role="menuitem" data-session="reboot">Restart…</button>
+      <button type="button" class="power-menu-item" role="menuitem" data-session="poweroff">Power Off…</button>
+      <div class="power-menu-sep" role="separator"></div>
+      <button type="button" class="power-menu-item" role="menuitem" data-session="logout">Log Out…</button>
+    </div>
+
+    <!-- Session dialog -->
+    <div class="session-overlay" id="session-overlay" hidden>
+      <div class="session-dialog" role="dialog" aria-labelledby="session-title" aria-modal="true">
+        <h2 id="session-title" class="session-title">Power Off</h2>
+        <p class="session-message" id="session-message">Do you want to power off?</p>
+        <div class="session-buttons">
+          <button type="button" class="session-btn" id="session-cancel">Cancel</button>
+          <button type="button" class="session-btn session-btn-primary" id="session-confirm">Power Off</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Files (Nautilus) window — CSD -->
+    <div class="files-window" id="files-window" role="dialog" aria-label="Home" hidden>
+      <header class="files-headerbar">
+        <div class="files-header-left">
+          <button type="button" class="files-hb-btn" id="files-back" title="Back" aria-label="Back" disabled>
+            <img class="sym" src="assets/actions/go-previous-symbolic.svg" alt="" draggable="false" />
+          </button>
+          <button type="button" class="files-hb-btn" id="files-forward" title="Forward" aria-label="Forward" disabled>
+            <img class="sym" src="assets/actions/go-next-symbolic.svg" alt="" draggable="false" />
+          </button>
+        </div>
+
+        <div class="files-pathbar" id="files-pathbar" title="Current location">
+          <button type="button" class="files-crumb" data-path="home">
+            <img src="assets/places/user-home.png" alt="" draggable="false" />
+            <span id="files-path-label">Home</span>
+          </button>
+        </div>
+
+        <div class="files-header-right">
+          <button type="button" class="files-hb-btn" id="files-search-btn" title="Search" aria-label="Search" aria-pressed="false">
+            <img class="sym" src="assets/actions/search-symbolic.svg" alt="" draggable="false" />
+          </button>
+          <button type="button" class="files-hb-btn active" id="files-view-icons" title="Grid View" aria-label="Grid View" aria-pressed="true">
+            <img class="sym" src="assets/actions/view-grid-symbolic.svg" alt="" draggable="false" />
+          </button>
+          <button type="button" class="files-hb-btn" id="files-view-list" title="List View" aria-label="List View" aria-pressed="false">
+            <img class="sym" src="assets/actions/view-list-symbolic.svg" alt="" draggable="false" />
+          </button>
+          <button type="button" class="files-hb-btn" title="Menu" aria-label="Menu">
+            <img class="sym" src="assets/actions/open-menu-symbolic.svg" alt="" draggable="false" />
+          </button>
+          <div class="files-window-controls">
+            <button type="button" class="files-wc files-min" id="files-min" title="Minimize" aria-label="Minimize"></button>
+            <button type="button" class="files-wc files-max" id="files-max" title="Maximize" aria-label="Maximize"></button>
+            <button type="button" class="files-wc files-close" id="files-close" title="Close" aria-label="Close"></button>
+          </div>
+        </div>
+      </header>
+
+      <div class="files-body">
+        <aside class="files-sidebar" id="files-sidebar" aria-label="Places">
+          <!-- filled by JS -->
+        </aside>
+        <div class="files-main">
+          <div class="files-search-bar" id="files-search-bar" hidden>
+            <img class="sym" src="assets/actions/search-symbolic.svg" alt="" draggable="false" />
+            <input type="search" id="files-search-input" class="files-search-input" placeholder="Search" autocomplete="off" spellcheck="false" />
+          </div>
+          <div class="files-content view-icons" id="files-content" role="list">
+            <div class="files-list-header" aria-hidden="true">
+              <span></span>
+              <span>Name</span>
+              <span>Size</span>
+              <span>Modified</span>
+            </div>
+          </div>
+          <footer class="files-statusbar">
+            <span id="files-status">8 items</span>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal window -->
+    <div class="term-window" id="term-window" role="dialog" aria-label="Terminal" hidden>
+      <header class="term-headerbar">
+        <div class="term-title-wrap">
+          <img src="assets/apps/org.gnome.Terminal.png" alt="" draggable="false" />
+          <span class="term-title">user@zorin: ~</span>
+        </div>
+        <div class="files-window-controls">
+          <button type="button" class="files-wc files-min" id="term-min" title="Minimize" aria-label="Minimize"></button>
+          <button type="button" class="files-wc files-max" id="term-max" title="Maximize" aria-label="Maximize"></button>
+          <button type="button" class="files-wc files-close" id="term-close" title="Close" aria-label="Close"></button>
+        </div>
+      </header>
+      <div class="term-body" id="term-body" tabindex="0">
+        <div class="term-line"><span class="term-prompt">user@zorin</span>:<span class="term-path">~</span>$ <span class="term-cmd">uname -a</span></div>
+        <div class="term-line term-out">Linux zorin 6.8.0-generic #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux</div>
+        <div class="term-line"><span class="term-prompt">user@zorin</span>:<span class="term-path">~</span>$ <span class="term-cmd">lsb_release -d</span></div>
+        <div class="term-line term-out">Description:	Zorin OS 17.3</div>
+        <div class="term-line"><span class="term-prompt">user@zorin</span>:<span class="term-path">~</span>$ <span class="term-cursor" aria-hidden="true">▋</span></div>
+      </div>
+    </div>
+
+    <!-- Bottom taskbar (zorin-taskbar) -->
+    <footer class="panel" id="panel" role="toolbar" aria-label="Taskbar">
+      <div class="panel-left">
+        <button type="button" class="panel-menu-btn" id="menu-btn" aria-expanded="false" aria-controls="zorin-menu" title="Zorin Menu">
+          <img src="assets/status/start-here.png" alt="" class="menu-logo" draggable="false" />
+        </button>
+
+        <div class="panel-launchers" id="panel-launchers" aria-label="Pinned applications">
+          <button type="button" class="panel-app" data-app="files" id="panel-files" title="Files">
+            <img src="assets/apps/org.gnome.Nautilus.png" alt="" draggable="false" />
+            <span class="panel-app-indicator" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="panel-app" data-app="firefox" title="Firefox">
+            <img src="assets/apps/firefox.png" alt="" draggable="false" />
+            <span class="panel-app-indicator" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="panel-app" data-app="software" title="Software">
+            <img src="assets/apps/org.gnome.Software.png" alt="" draggable="false" />
+            <span class="panel-app-indicator" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="panel-app" data-app="terminal" id="panel-terminal" title="Terminal">
+            <img src="assets/apps/org.gnome.Terminal.png" alt="" draggable="false" />
+            <span class="panel-app-indicator" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-right">
+        <button type="button" class="panel-applet panel-status-cluster" id="qs-btn" title="System menu" aria-expanded="false" aria-controls="qs-popover">
+          <img class="sym" src="assets/status/network-wired-symbolic.svg" alt="" draggable="false" />
+          <img class="sym" id="panel-volume-icon" src="assets/status/audio-volume-medium-symbolic.svg" alt="" draggable="false" />
+          <img class="sym" src="assets/status/battery-full-charged-symbolic.svg" alt="" draggable="false" />
+        </button>
+        <button type="button" class="panel-applet panel-clock" id="clock-btn" title="Calendar" aria-expanded="false" aria-controls="calendar-popover">
+          <span id="clock-text">Mon 12:00</span>
+        </button>
+        <button type="button" class="panel-applet panel-show-desktop" id="show-desktop-btn" title="Show Desktop" aria-label="Show Desktop">
+          <img class="sym" src="assets/status/show-desktop-symbolic.svg" alt="" draggable="false" />
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
